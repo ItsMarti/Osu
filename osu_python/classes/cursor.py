@@ -47,6 +47,60 @@ class Cursor:
         self.cursor_middle_img = None
         if cursor_middle_img:
             self.cursor_middle_sizes = (
-
+                cursor_middle_img.get_width() * scale,
+                cursor_middle_img.get_height() * scale,
             )
-            
+            self.cursor_middle_img = pg.transform.scale(
+                cursor_middle_img, self.cursor_middle_sizes
+            )
+
+        self.trail = []
+        self.angle = 0
+
+
+    def trail_tick(self):
+        for i, v in enumerate(self.trail):
+            v[2] -= 1
+            if v[2] <= 0:
+                self.trail.pop(i)
+
+
+    def draw(self, screen, pos):
+        if len(self.trail) > 0:
+            dist = (
+                (pos[0] - self.trail[-1][0]) ** 2 + (pos[1] - self.trail[-1][1]) ** 2
+            ) ** 0.5
+            if dist > 10:
+                self.trail.append([*pos, 8])
+        else:
+            self.trail.append([*pos, 8])
+        for t in self.trail:
+            trail = self.trail_img.copy()
+            trail.set_alpha(t[2] * 32)
+            screen.blit(trail, (t[0] - self.trail_sizes[0] / 2, t[1] - self.trail_sizes[1] / 2))
+
+        if self.rotation:
+            self.angle -= 1
+            rotated_frame = pg.transform.rotate(self.cursor_img, self.angle)
+            offset = (
+                (rotated_frame.get_width() - self.cursor_img.get_width()) // 2
+                + self.cursor_img.get_width() // 2,
+                (rotated_frame.get_height() - self.cursor_img.get_height()) // 2
+                + self.cursor_img.get_height() // 2,
+            )
+            screen.blit(rotated_frame, (pos[0] - offset[0], pos[1] - offset[1]))
+        else:
+            screen.blit(
+                self.cursor_img,
+                (pos[0] - self.sizes[0] / 2, pos[1] - self.sizes[1] / 2),
+            )
+
+        if self.cursor_middle_img:
+            screen.blit(
+                self.cursor_middle_img,
+                (
+                    pos[0] - self.cursor_middle_sizes[0] / 2,
+                    pos[1] - self.cursor_middle_sizes[1] / 2,
+                )
+            )
+
